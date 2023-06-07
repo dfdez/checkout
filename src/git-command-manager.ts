@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as fs from 'fs'
 import * as fshelper from './fs-helper'
 import * as io from '@actions/io'
 import * as path from 'path'
@@ -17,6 +18,7 @@ export interface IGitCommandManager {
   branchExists(remote: boolean, pattern: string): Promise<boolean>
   branchList(remote: boolean): Promise<string[]>
   sparseCheckout(sparseCheckout: string[]): Promise<void>
+  sparseCheckoutNonConeMode(sparseCheckout: string[]): Promise<void>
   checkout(ref: string, startPoint: string): Promise<void>
   checkoutDetach(): Promise<void>
   config(
@@ -59,9 +61,14 @@ export interface IGitCommandManager {
 
 export async function createCommandManager(
   workingDirectory: string,
-  lfs: boolean
+  lfs: boolean,
+  doSparseCheckout: boolean
 ): Promise<IGitCommandManager> {
-  return await GitCommandManager.createCommandManager(workingDirectory, lfs)
+  return await GitCommandManager.createCommandManager(
+    workingDirectory,
+    lfs,
+    doSparseCheckout
+  )
 }
 
 class GitCommandManager {
@@ -71,6 +78,7 @@ class GitCommandManager {
   }
   private gitPath = ''
   private lfs = false
+  private doSparseCheckout = false
   private workingDirectory = ''
 
   // Private constructor; use createCommandManager()
@@ -163,6 +171,23 @@ class GitCommandManager {
 
   async sparseCheckout(sparseCheckout: string[]): Promise<void> {
     await this.execGit(['sparse-checkout', 'set', ...sparseCheckout])
+  }
+
+  async sparseCheckoutNonConeMode(sparseCheckout: string[]): Promise<void> {
+    await this.execGit(['config', 'core.sparseCheckout', 'true'])
+    const output = await this.execGit([
+      'rev-parse',
+      '--git-path',
+      'info/sparse-checkout'
+    ])
+    const sparseCheckoutPath = path.join(
+      this.workingDirectory,
+      output.stdout.trimRight()
+    )
+    await fs.promises.appendFile(
+      sparseCheckoutPath,
+      `\n${sparseCheckout.join('\n')}\n`
+    )
   }
 
   async checkout(ref: string, startPoint: string): Promise<void> {
@@ -442,10 +467,11 @@ class GitCommandManager {
 
   static async createCommandManager(
     workingDirectory: string,
-    lfs: boolean
+    lfs: boolean,
+    sparseCheckout: boolean
   ): Promise<GitCommandManager> {
     const result = new GitCommandManager()
-    await result.initializeCommandManager(workingDirectory, lfs)
+    await result.initializeCommandManager(workingDirectory, lfs, sparseCheckout)
     return result
   }
 
@@ -495,7 +521,8 @@ class GitCommandManager {
 
   private async initializeCommandManager(
     workingDirectory: string,
-    lfs: boolean
+    lfs: boolean,
+    sparseCheckout: boolean
   ): Promise<void> {
     this.workingDirectory = workingDirectory
 
@@ -558,6 +585,16 @@ class GitCommandManager {
       }
     }
 
+    this.doSparseCheckout = sparseCheckout
+    if (this.doSparseCheckout) {
+      // The `git sparse-checkout` command was introduced in Git v2.25.0
+      const minimumGitSparseCheckoutVersion = new GitVersion('2.25')
+      if (!gitVersion.checkMinimum(minimumGitSparseCheckoutVersion)) {
+        throw new Error(
+          `Minimum Git version required for sparse checkout is ${minimumGitSparseCheckoutVersion}. Your git ('${this.gitPath}') is ${gitVersion}`
+        )
+      }
+    }
     // Set the user agent
     const gitHttpUserAgent = `git/${gitVersion} (github-actions-checkout)`
     core.debug(`Set git useragent to: ${gitHttpUserAgent}`)

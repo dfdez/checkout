@@ -197,7 +197,11 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     // Sparse checkout
     if (settings.sparseCheckout) {
       core.startGroup('Setting up sparse checkout')
-      await git.sparseCheckout(settings.sparseCheckout)
+      if (settings.sparseCheckoutConeMode) {
+        await git.sparseCheckout(settings.sparseCheckout)
+      } else {
+        await git.sparseCheckoutNonConeMode(settings.sparseCheckout)
+      }
       core.endGroup()
     }
 
@@ -271,7 +275,11 @@ export async function cleanup(repositoryPath: string): Promise<void> {
 
   let git: IGitCommandManager
   try {
-    git = await gitCommandManager.createCommandManager(repositoryPath, false)
+    git = await gitCommandManager.createCommandManager(
+      repositoryPath,
+      false,
+      false
+    )
   } catch {
     return
   }
@@ -307,7 +315,8 @@ async function getGitCommandManager(
   try {
     return await gitCommandManager.createCommandManager(
       settings.repositoryPath,
-      settings.lfs
+      settings.lfs,
+      settings.sparseCheckout != null
     )
   } catch (err) {
     // Git is required for LFS

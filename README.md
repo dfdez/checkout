@@ -74,10 +74,14 @@ When Git 2.18 or higher is not in your PATH, falls back to the REST API to downl
     # Default: true
     clean: ''
 
-    # Do a sparse checkout on given patterns. Each pattern should be sepparated with
+    # Do a sparse checkout on given patterns. Each pattern should be separated with
     # new lines
     # Default: null
     sparse-checkout: ''
+
+    # Specifies whether to use cone-mode when doing a sparse checkout.
+    # Default: true
+    sparse-checkout-cone-mode: ''
 
     # Number of commits to fetch. 0 indicates all history for all branches and tags.
     # Default: 1
@@ -111,17 +115,18 @@ When Git 2.18 or higher is not in your PATH, falls back to the REST API to downl
 
 # Scenarios
 
-- [Fetch only the root files](#fetch-only-the-root-files)
-- [Fetch only the root files and `.github` and `src` folder](#fetch-only-the-root-files-and-github-and-src-folder)
-- [Fetch all history for all tags and branches](#fetch-all-history-for-all-tags-and-branches)
-- [Checkout a different branch](#checkout-a-different-branch)
-- [Checkout HEAD^](#checkout-head)
-- [Checkout multiple repos (side by side)](#checkout-multiple-repos-side-by-side)
-- [Checkout multiple repos (nested)](#checkout-multiple-repos-nested)
-- [Checkout multiple repos (private)](#checkout-multiple-repos-private)
-- [Checkout pull request HEAD commit instead of merge commit](#checkout-pull-request-head-commit-instead-of-merge-commit)
-- [Checkout pull request on closed event](#checkout-pull-request-on-closed-event)
-- [Push a commit using the built-in token](#push-a-commit-using-the-built-in-token)
+- [Fetch only the root files](#Fetch-only-the-root-files)
+- [Fetch only the root files and `.github` and `src` folder](#Fetch-only-the-root-files-and-github-and-src-folder)
+- [Fetch only a single file](#Fetch-only-a-single-file)
+- [Fetch all history for all tags and branches](#Fetch-all-history-for-all-tags-and-branches)
+- [Checkout a different branch](#Checkout-a-different-branch)
+- [Checkout HEAD^](#Checkout-HEAD)
+- [Checkout multiple repos (side by side)](#Checkout-multiple-repos-side-by-side)
+- [Checkout multiple repos (nested)](#Checkout-multiple-repos-nested)
+- [Checkout multiple repos (private)](#Checkout-multiple-repos-private)
+- [Checkout pull request HEAD commit instead of merge commit](#Checkout-pull-request-HEAD-commit-instead-of-merge-commit)
+- [Checkout pull request on closed event](#Checkout-pull-request-on-closed-event)
+- [Push a commit using the built-in token](#Push-a-commit-using-the-built-in-token)
 
 ## Fetch only the root files
 
@@ -139,6 +144,16 @@ When Git 2.18 or higher is not in your PATH, falls back to the REST API to downl
     sparse-checkout: |
       .github
       src
+```
+
+## Fetch only a single file
+
+```yaml
+- uses: actions/checkout@v3
+  with:
+    sparse-checkout: |
+      README.md
+    sparse-checkout-cone-mode: false
 ```
 
 ## Fetch all history for all tags and branches
