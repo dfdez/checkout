@@ -40,6 +40,7 @@ export interface IGitCommandManager {
   init(): Promise<void>
   isDetached(): Promise<boolean>
   lfsFetch(ref: string): Promise<void>
+  lfsPull(include?: string[]): Promise<void>
   lfsInstall(): Promise<void>
   log1(format?: string): Promise<string>
   remoteAdd(remoteName: string, remoteUrl: string): Promise<void>
@@ -321,6 +322,20 @@ class GitCommandManager {
 
   async lfsFetch(ref: string): Promise<void> {
     const args = ['lfs', 'fetch', 'origin', ref]
+
+    const that = this
+    await retryHelper.execute(async () => {
+      await that.execGit(args)
+    })
+  }
+
+  async lfsPull(include?: string[]): Promise<void> {
+    const args = ['lfs', 'pull']
+
+    if (include?.length) {
+      args.push('--include')
+      args.push(include.join())
+    }
 
     const that = this
     await retryHelper.execute(async () => {
