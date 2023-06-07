@@ -39,7 +39,8 @@ describe('git-auth-helper tests', () => {
     jest.spyOn(exec, 'exec').mockImplementation(mockExec)
     const workingDirectory = 'test'
     const lfs = false
-    git = await commandManager.createCommandManager(workingDirectory, lfs)
+    const doSparseCheckout = false
+    git = await commandManager.createCommandManager(workingDirectory, lfs, doSparseCheckout)
 
     let branches = await git.branchList(false)
 
@@ -70,7 +71,8 @@ describe('git-auth-helper tests', () => {
     jest.spyOn(exec, 'exec').mockImplementation(mockExec)
     const workingDirectory = 'test'
     const lfs = false
-    git = await commandManager.createCommandManager(workingDirectory, lfs)
+    const doSparseCheckout = false
+    git = await commandManager.createCommandManager(workingDirectory, lfs, doSparseCheckout)
 
     let branches = await git.branchList(false)
 
