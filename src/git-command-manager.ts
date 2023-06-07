@@ -544,7 +544,7 @@ class GitCommandManager {
     // Git-lfs will try to pull down assets if any of the local/user/system setting exist.
     // If the user didn't enable `LFS` in their pipeline definition, disable LFS fetch/checkout.
     this.lfs = lfs
-    if (!this.lfs) {
+    if (!this.lfs || sparseCheckout) {
       this.gitEnv['GIT_LFS_SKIP_SMUDGE'] = '1'
     }
 
