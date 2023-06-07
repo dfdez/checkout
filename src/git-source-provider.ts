@@ -188,7 +188,8 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     // LFS fetch
     // Explicit lfs-fetch to avoid slow checkout (fetches one lfs object at a time).
     // Explicit lfs fetch will fetch lfs objects in parallel.
-    if (settings.lfs) {
+    // For sparse checkouts, wait until after the checkout is done.
+    if (settings.lfs && !settings.sparseCheckout) {
       core.startGroup('Fetching LFS objects')
       await git.lfsFetch(checkoutInfo.startPoint || checkoutInfo.ref)
       core.endGroup()
@@ -209,6 +210,13 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     core.startGroup('Checking out the ref')
     await git.checkout(checkoutInfo.ref, checkoutInfo.startPoint)
     core.endGroup()
+
+    // Sparse checkout only: delayed LFS pull
+    if (settings.lfs && settings.sparseCheckout) {
+      core.startGroup('Pulling LFS objects')
+      await git.lfsPull(settings.sparseCheckout)
+      core.endGroup()
+    }
 
     // Submodules
     if (settings.submodules) {

@@ -711,6 +711,19 @@ class GitCommandManager {
             }));
         });
     }
+    lfsPull(include) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['lfs', 'pull'];
+            if (include === null || include === void 0 ? void 0 : include.length) {
+                args.push('--include');
+                args.push(include.join());
+            }
+            const that = this;
+            yield retryHelper.execute(() => __awaiter(this, void 0, void 0, function* () {
+                yield that.execGit(args);
+            }));
+        });
+    }
     lfsInstall() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.execGit(['lfs', 'install', '--local']);
@@ -1267,7 +1280,8 @@ function getSource(settings) {
             // LFS fetch
             // Explicit lfs-fetch to avoid slow checkout (fetches one lfs object at a time).
             // Explicit lfs fetch will fetch lfs objects in parallel.
-            if (settings.lfs) {
+            // For sparse checkouts, wait until after the checkout is done.
+            if (settings.lfs && !settings.sparseCheckout) {
                 core.startGroup('Fetching LFS objects');
                 yield git.lfsFetch(checkoutInfo.startPoint || checkoutInfo.ref);
                 core.endGroup();
@@ -1287,6 +1301,12 @@ function getSource(settings) {
             core.startGroup('Checking out the ref');
             yield git.checkout(checkoutInfo.ref, checkoutInfo.startPoint);
             core.endGroup();
+            // Sparse checkout only: delayed LFS pull
+            if (settings.lfs && settings.sparseCheckout) {
+                core.startGroup('Pulling LFS objects');
+                yield git.lfsPull(settings.sparseCheckout);
+                core.endGroup();
+            }
             // Submodules
             if (settings.submodules) {
                 // Temporarily override global config
